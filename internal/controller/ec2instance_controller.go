@@ -19,9 +19,11 @@ package controller
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	computev1 "github.com/xonas1101/controller-test/api/v1"
@@ -48,19 +50,48 @@ type EC2InstanceReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.23.1/pkg/reconcile
 func (r *EC2InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := logf.FromContext(ctx)
-	ec2InstanceObject := &computev1.EC2Instance{}
-	r.Get(ctx, req.NamespacedName, ec2InstanceObject)
-	
-	l.Info("Reconciling EC2Instance","Name", ec2InstanceObject.Spec.InstanceName)
-	l.Info("EC2Instance Type","Type", ec2InstanceObject.Spec.InstanceType)
-	l.Info("EC2Instance AMI ID","AMIID", ec2InstanceObject.Spec.AmiID)
-	l.Info("EC2Instance SSH key","SSH Key", ec2InstanceObject.Spec.SshKey)
-	l.Info("EC2Instance Subnet","Subnet", ec2InstanceObject.Spec.Subnet)
-	l.Info("EC2Instance Tags","Tags", ec2InstanceObject.Spec.Tags)
-	l.Info("EC2Instance Storage","Storage", ec2InstanceObject.Spec.Storage)
-	l.Info("Reconciled EC2Instance","Name", ec2InstanceObject.Spec.InstanceName)
+	l.Info("=== RECONCILE LOOP STARTED ===", "namespace", req.Namespace, "name", req.Name)
+	ec2Instance := &computev1.EC2Instance{}
 
-	return ctrl.Result{}, nil
+	if err:= r.Get(ctx, req.NamespacedName, ec2Instance); err!=nil{
+		if errors.IsNotFound(err){
+			l.Info("Instance deleted. No need to reconcile.")
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, err
+	}
+	if !ec2Instance.DeletionTimestamp.IsZero(){
+		l.Info("Has Deletion Timestamp, Instance is being deleted")
+		_,err:= deleteEc2Instance(ctx, ec2Instance)
+		if err!=nil{
+			l.Error(err, "Failed to delete EC2 Instance")
+			return ctrl.Result{Requeue: true}, err
+		}
+
+		controllerutil.RemoveFinalizer(ec2Instance, "ec2instance.compute.example.com")
+		if err := r.Update(ctx, ec2Instance); err!=nil{
+			l.Error(err, "Failed to remove finalizer")
+			return ctrl.Result{Requeue: true}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	l.Info("=== ABOUT TO ADD FINALIZER ===")
+	ec2Instance.Finalizers = append(ec2Instance.Finalizers, "ec2instance.compute.exmaple.com")
+	if err := r.Update(ctx, ec2Instance); err!=nil{
+		l.Error(err, "failed to add finalizer")
+		return ctrl.Result{Requeue: true}, err
+	}
+	l.Info("=== FINALIZER ADDED ===")
+	l.Info("=== CONTINUING WITH EC2 INSTANCE CREATION IN CURRENT RECONCILE")
+
+	createdInstanceInfo, err:= createEc2Instance(ec2Instance)
+	if err!=nil{
+		l.Error(err, "Failed to create EC2 Instance")
+		return ctrl.Result{}, err
+	}
+
+	l.Info("=== ABOUT TO UPDATE STATUS ===")
 }
 
 // SetupWithManager sets up the controller with the Manager.

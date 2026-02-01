@@ -25,26 +25,30 @@ import (
 
 // EC2InstanceSpec defines the desired state of EC2Instance
 type EC2InstanceSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	// The following markers will use OpenAPI v3 schema to validate the value
-	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
 
-	// foo is an example field of EC2Instance. Edit ec2instance_types.go to remove/update
-	// +optional
-	AmiID string `json:"amiID"`
-	SshKey string `json:"sshKey"`
 	InstanceType string `json:"instanceType"`
+	AmiID string `json:"amiID"`
+	Region string `json:"region"`
+	AvailabilityZone string `json:"availablityZone,omitempty"`
+	KeyPair string `json:"keyPair,omitempty"`
+	SecurityGroups string `json:"securityGroups,omitempty"`
 	Subnet string `json:"subnet"`
+	UserData string `json:"userData,omitempty"`
 	Tags map[string]string `json:"tags,omitempty"`
 	Storage StorageConfig `json:"storage"`
-	AdditionalTags map[string]string `json:"additionalTags,omitempty"`
-	InstanceName string `json:"instanceName"`
+	AssociatePublicIP bool `json:"associatePublicIP,omitempty"`
 }
 
 type StorageConfig struct {
-	Size int `json:"size"`
-	Type string `json:"type"`
+	RootVolume VolumeConfig `json:"rootVolume,omitempty"`
+	AdditionalVolumes VolumeConfig `json:"additionalVolume,omitempty"`
+}
+
+type VolumeConfig struct {
+	Size int32 `json:"size"`
+	Type string `json:"type,omitempty"`
+	DeviceName string `json:"deviceName,omitempty"`
+	Encrypted bool `json:"encrypted,omitempty"`
 }
 
 // EC2InstanceStatus defines the observed state of EC2Instance.
@@ -65,8 +69,8 @@ type EC2InstanceStatus struct {
 	//
 	// The status of each condition is one of True, False, or Unknown.
 	// +optional
-	Phase string `json:"phase,omitempty"`
 	InstanceID string `json:"instanceID,omitempty"`
+	State string `json:"state,omitempty"`
 	PublicIP string `json:"publicIP,omitempty"`
 }
 
@@ -76,17 +80,8 @@ type EC2InstanceStatus struct {
 // EC2Instance is the Schema for the ec2instances API
 type EC2Instance struct {
 	metav1.TypeMeta `json:",inline"`
-
-	// metadata is a standard object metadata
-	// +optional
 	metav1.ObjectMeta `json:"metadata,omitzero"`
-
-	// spec defines the desired state of EC2Instance
-	// +required
 	Spec EC2InstanceSpec `json:"spec"`
-
-	// status defines the observed state of EC2Instance
-	// +optional
 	Status EC2InstanceStatus `json:"status,omitzero"`
 }
 
