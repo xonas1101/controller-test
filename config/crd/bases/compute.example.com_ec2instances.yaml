@@ -47,6 +47,8 @@ spec:
                 description: foo is an example field of EC2Instance. Edit ec2instance_types.go
                   to remove/update
                 type: string
+              instanceName:
+                type: string
               instanceType:
                 type: string
               sshKey:
@@ -68,6 +70,7 @@ spec:
                   type: string
                 type: object
             required:
+            - instanceName
             - instanceType
             - sshKey
             - storage

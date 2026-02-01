@@ -47,9 +47,18 @@ type EC2InstanceReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.23.1/pkg/reconcile
 func (r *EC2InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
-
-	// TODO(user): your logic here
+	l := logf.FromContext(ctx)
+	ec2InstanceObject := &computev1.EC2Instance{}
+	r.Get(ctx, req.NamespacedName, ec2InstanceObject)
+	
+	l.Info("Reconciling EC2Instance","Name", ec2InstanceObject.Spec.InstanceName)
+	l.Info("EC2Instance Type","Type", ec2InstanceObject.Spec.InstanceType)
+	l.Info("EC2Instance AMI ID","AMIID", ec2InstanceObject.Spec.AmiID)
+	l.Info("EC2Instance SSH key","SSH Key", ec2InstanceObject.Spec.SshKey)
+	l.Info("EC2Instance Subnet","Subnet", ec2InstanceObject.Spec.Subnet)
+	l.Info("EC2Instance Tags","Tags", ec2InstanceObject.Spec.Tags)
+	l.Info("EC2Instance Storage","Storage", ec2InstanceObject.Spec.Storage)
+	l.Info("Reconciled EC2Instance","Name", ec2InstanceObject.Spec.InstanceName)
 
 	return ctrl.Result{}, nil
 }
