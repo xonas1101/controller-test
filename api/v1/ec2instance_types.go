@@ -32,10 +32,18 @@ type EC2InstanceSpec struct {
 
 	// foo is an example field of EC2Instance. Edit ec2instance_types.go to remove/update
 	// +optional
-	Foo *string `json:"foo,omitempty"`
-	AmiID string `json:"amiID,omitempty"`
-	SshKey string `json:"sshKey,omitempty"`
-	Type string `json:"type,omitempty"`
+	AmiID string `json:"amiID"`
+	SshKey string `json:"sshKey"`
+	InstanceType string `json:"instanceType"`
+	Subnet string `json:"subnet"`
+	Tags map[string]string `json:"tags,omitempty"`
+	Storage StorageConfig `json:"storage"`
+	AdditionalTags map[string]string `json:"additionalTags,omitempty"`
+}
+
+type StorageConfig struct {
+	Size int `json:"size"`
+	Type string `json:"type"`
 }
 
 // EC2InstanceStatus defines the observed state of EC2Instance.
@@ -55,8 +63,6 @@ type EC2InstanceStatus struct {
 	// - "Degraded": the resource failed to reach or maintain its desired state
 	//
 	// The status of each condition is one of True, False, or Unknown.
-	// +listType=map
-	// +listMapKey=type
 	// +optional
 	Phase string `json:"phase,omitempty"`
 	InstanceID string `json:"instanceID,omitempty"`
